@@ -1,0 +1,2 @@
+include orangecontrib/b22/tutorials/*.ows
+include orangecontrib/b22/widgets/icons/*
