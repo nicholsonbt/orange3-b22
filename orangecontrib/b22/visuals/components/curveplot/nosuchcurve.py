@@ -1,0 +1,2 @@
+class NoSuchCurve(ValueError):
+    pass

@@ -2,3 +2,4 @@ setuptools>=36.3
 Orange3>=3.34.0
 orange-spectroscopy
 opusFC
+awkward

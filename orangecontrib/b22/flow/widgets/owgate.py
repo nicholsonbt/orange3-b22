@@ -21,6 +21,8 @@ class OWGate(OWWidget):
     name = "Gate"
     description = "A gate to control the flow of data."
     icon = "icons/gate.svg"
+    id = "orangecontrib.b22.flow.widgets.gate"
+    priority = 10
 
 
     class Inputs:
