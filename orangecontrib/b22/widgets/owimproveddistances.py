@@ -60,6 +60,7 @@ class OWImprovedDistances(widget.OWWidget, ConcurrentWidgetMixin):
 
     class Outputs:
         distances = widget.Output("Distances", Orange.misc.DistMatrix, dynamic=False)
+        data = widget.Output("Data", Orange.data.Table)
 
 
     settings_version = 1
@@ -256,6 +257,18 @@ class OWImprovedDistances(widget.OWWidget, ConcurrentWidgetMixin):
     def on_done(self, result: Orange.misc.DistMatrix):
         assert isinstance(result, Orange.misc.DistMatrix) or result is None
         self.Outputs.distances.send(result)
+
+        MAX_COLS = 5
+
+        if result.shape[1] <= MAX_COLS:
+            out_data = self.data.copy()
+            
+            for i in range(result.shape[1]):
+                data = result[:,i]
+                variable = Orange.data.ContinuousVariable(f"K {i+1}")
+                out_data = out_data.add_column(variable, data, to_metas=True)
+            
+            self.Outputs.data.send(out_data)
 
 
     def on_exception(self, ex):
