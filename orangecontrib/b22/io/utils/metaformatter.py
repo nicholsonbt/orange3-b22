@@ -35,46 +35,46 @@ class MetaFormatter:
 
         "Description" : lambda *values: (None, " ".join(values)),
 
-        "Date" : lambda date, time: (None, datetime.strptime(date + " " + time, '%d/%m/%Y %H:%M:%S')),
+        "Date" : lambda date, time: (None, datetime.strptime(date + " " + time, '%m/%d/%Y %H:%M:%S')),
 
         "Reference" : lambda *values: (None, " ".join(values)),
 
-        "Scanner Center Position (X, Y)" : lambda units, x, y: ("Real Center", {
+        "Scanner Center Position (X, Y)" : lambda units, x="0.0", y="0.0": ("Real Center", {
                 "Units" : units[1:-1],
-                "X" : float(x),
-                "Y" : float(y),
+                "X" : MetaFormatter.parse(x, float),
+                "Y" : MetaFormatter.parse(y, float),
             }),
 
-        "Rotation" : lambda units, theta: ("Angle", {
+        "Rotation" : lambda units, theta="0.0": ("Angle", {
                 "Units" : units[1:-1],
-                "Theta" : float(theta),
+                "Theta" : MetaFormatter.parse(theta, float),
             }),
 
-        "Scan Area (X, Y, Z)" : lambda units, x, y, z: ("Real Area", {
+        "Scan Area (X, Y, Z)" : lambda units, x="0.0", y="0.0", z="0.0": ("Real Area", {
                 "Units" : units[1:-1],
-                "X" : float(x),
-                "Y" : float(y),
-                "Z" : float(z),
+                "X" : MetaFormatter.parse(x, float),
+                "Y" : MetaFormatter.parse(y, float),
+                "Z" : MetaFormatter.parse(z, float),
             }),
 
-        "Pixel Area (X, Y, Z)" : lambda units, x, y, z: ("Pixel Area", {
+        "Pixel Area (X, Y, Z)" : lambda units, x="0.0", y="0.0", z="0.0": ("Pixel Area", {
                 "Units" : units[1:-1],
-                "X" : float(x),
-                "Y" : float(y),
-                "Z" : float(z),
+                "X" : MetaFormatter.parse(x, float),
+                "Y" : MetaFormatter.parse(y, float),
+                "Z" : MetaFormatter.parse(z, float),
             }),
 
-        "Interferometer Center/Distance" : lambda units, center, distance: (None, {
+        "Interferometer Center/Distance" : lambda units, center="0.0", distance="0.0": (None, {
                 "Units" : units[1:-1],
-                "Center" : float(center),
-                "Distance" : float(distance),
+                "Center" : MetaFormatter.parse(center, float),
+                "Distance" : MetaFormatter.parse(distance, float),
             }),
 
         "Averaging" : lambda *values: (None, " ".join(values)),
 
-        "Integration time" : lambda units, value: (None, {
+        "Integration time" : lambda units, time="0.0": (None, {
                 "Units" : units[1:-1],
-                "Value" : float(value),
+                "Time" : MetaFormatter.parse(time, float),
             }),
 
         "Wavenumber Scaling" : lambda *values: (None, " ".join(values)),
@@ -83,59 +83,62 @@ class MetaFormatter:
 
         "Detector" : lambda *values: (None, " ".join(values)),
 
-        "Target Wavelength" : lambda units: (None, units[1:-1]),
+        "Target Wavelength" : lambda units, wavelength="0.0": (None, {
+                "Units" : units[1:-1],
+                "Wavelength" : MetaFormatter.parse(wavelength, float),
+            }),
 
         "Demodulation Mode" : lambda *values: (None, " ".join(values)),
 
-        "Tip Frequency" : lambda units, frequency: (None, {
+        "Tip Frequency" : lambda units, frequency="0.0": (None, {
                 "Units" : units[1:-1],
-                "Frequency" : float(frequency.replace(",", "")),
+                "Frequency" : MetaFormatter.parse(frequency, float),
             }),
 
-        "Tip Amplitude" : lambda units, amplitude: (None, {
+        "Tip Amplitude" : lambda units, amplitude="0.0": (None, {
                 "Units" : units[1:-1],
-                "Amplitude" : float(amplitude),
+                "Amplitude" : MetaFormatter.parse(amplitude, float),
             }),
 
-        "Tapping Amplitude" : lambda units, amplitude: (None, {
+        "Tapping Amplitude" : lambda units, amplitude="0.0": (None, {
                 "Units" : units[1:-1],
-                "Amplitude" : float(amplitude),
+                "Amplitude" : MetaFormatter.parse(amplitude, float),
             }),
 
-        "Modulation Frequency" : lambda units, frequency: (None, {
+        "Modulation Frequency" : lambda units, frequency="0.0": (None, {
                 "Units" : units[1:-1],
-                "Frequency" : float(frequency),
+                "Frequency" : MetaFormatter.parse(frequency, float),
             }),
 
-        "Modulation Amplitude" : lambda units, amplitude: (None, {
+        "Modulation Amplitude" : lambda units, amplitude="0.0": (None, {
                 "Units" : units[1:-1],
-                "Amplitude" : float(amplitude),
+                "Amplitude" : MetaFormatter.parse(amplitude, float),
             }),
 
-        "Modulation Offset" : lambda units, offset: (None, {
+        "Modulation Offset" : lambda units, offset="0.0": (None, {
                 "Units" : units[1:-1],
-                "Offset" : float(offset),
+                "Offset" : MetaFormatter.parse(offset, float),
             }),
 
-        "Setpoint" : lambda units, setpoint: (None, {
+        "Setpoint" : lambda units, setpoint="0.0": (None, {
                 "Units" : units[1:-1],
-                "Setpoint" : float(setpoint),
+                "Setpoint" : MetaFormatter.parse(setpoint, float),
             }),
 
-        "Regulator (P, I, D)": lambda p, i, d: (None, {
-                "P" : float(p),
-                "I" : float(i),
-                "D" : float(d),
+        "Regulator (P, I, D)": lambda p="0.0", i="0.0", d="0.0": (None, {
+                "P" : MetaFormatter.parse(p, float),
+                "I" : MetaFormatter.parse(i, float),
+                "D" : MetaFormatter.parse(d, float),
             }),
 
-        "Tip Potential" : lambda units, potential: (None, {
+        "Tip Potential" : lambda units, potential="0.0": (None, {
                 "Units" : units[1:-1],
-                "Potential" : float(potential),
+                "Potential" : MetaFormatter.parse(potential, float),
             }),
 
-        "M1A Scaling" : lambda units, scaling: (None, {
+        "M1A Scaling" : lambda units, scaling="0.0": (None, {
                 "Units" : units[1:-1],
-                "Scaling" : float(scaling),
+                "Scaling" : MetaFormatter.parse(scaling, float),
             }),
 
         "M1A Cantilever Factor" : lambda *values: (None, " ".join(values)),
@@ -166,6 +169,22 @@ class MetaFormatter:
                 raise MetaKeyException(f"MetaFormatter has no method to convert '{key}'")
 
         if callable(func):
+            print(key, values)
             return func(*values)
         
         raise MetaKeyException(f"MetaFormatter has no method to convert '{key}'")
+    
+
+    @staticmethod
+    def parse(data, type_):
+        if type_ is str:
+            return data
+        
+        if type_ is float:
+            return float(data.replace(",", ""))
+        
+        # if type_ == ""
+
+
+
+        # print(2)
