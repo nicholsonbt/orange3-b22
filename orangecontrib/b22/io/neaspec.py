@@ -159,6 +159,14 @@ class Nea2Reader(FileFormat, SpectralFileFormat):
         # Find the Wavenumber column
         headers = line.strip().split('\t')
 
+        if "Wavenumber" in headers:
+            return self.read_v2_wavenumbers(headers, file, meta)
+        
+        return self.read_v2_interferograms(headers, file, meta)
+    
+
+
+    def read_v2_wavenumbers(self, headers, file, meta):
         # Desired headers:
         # map_x  map_y  row  col  channel  [wavenumbers]
 
@@ -225,7 +233,97 @@ class Nea2Reader(FileFormat, SpectralFileFormat):
                                      metas=meta_data)
         
         meta_data.attributes = meta
+
         return waveN, M, meta_data
+
+
+
+    def read_v2_interferograms(self, headers, file, meta):
+        # Desired headers:
+        # map_x  map_y  depth  channel  [run]
+
+        row_i = col_i = run_i = dep_i = None
+
+        for i, e in enumerate(headers):
+            if e == "Row":
+                row_i = i
+
+            elif e == "Column":
+                col_i = i
+
+            elif e == "Run":
+                run_i = i
+
+            elif e == "Depth":
+                dep_i = i
+
+
+        # Run is averaging
+        # Depth is depth
+
+
+        channels = np.array(headers[dep_i + 1:])
+        # Extract other data #
+
+        rows = int(np.nanmax(file[:, row_i]) + 1)
+        cols = int(np.nanmax(file[:, col_i]) + 1)
+
+        n_cols = int(np.nanmax(file[:, dep_i]) + 1)
+        n_rows = rows * cols * channels.size
+
+
+        # Transform Actual Data
+        M = np.full((int(n_rows), int(n_cols)), np.nan, dtype='float')
+
+        meta_data = np.zeros((int(n_rows), 4), dtype='object')
+
+
+        for j in range(int(rows * cols)):
+            lower = j * n_cols
+            upper = (j + 1) * n_cols
+
+            row_values = file[lower:upper, row_i]
+            assert np.all(row_values == row_values[0])
+
+            col_values = file[lower:upper, col_i]
+            assert np.all(col_values == col_values[0])
+
+            run_values = file[lower:upper, run_i]
+            print(run_values)
+
+            meta_data[channels.size * j:channels.size * (j+1), 0] = col_values[0]
+            meta_data[channels.size * j:channels.size * (j+1), 1] = row_values[0]
+            meta_data[channels.size * j:channels.size * (j+1), 2] = run_values[0]
+            meta_data[channels.size * j:channels.size * (j+1), 3] = np.arange(channels.size)
+
+            for k in range(channels.size):
+                M[k + channels.size * j, :] = file[lower:upper, k + run_i + 1]
+
+
+        meta_data[:,[0, 1]] = transform_row_col(meta_data[:,[0, 1]], meta)
+
+
+        waveN = file[0:int(n_cols), dep_i]
+        metas = [Orange.data.ContinuousVariable.make("map_x"),
+                 Orange.data.ContinuousVariable.make("map_y"),
+                 Orange.data.ContinuousVariable.make("run"),
+                 Orange.data.DiscreteVariable.make("channel", values=channels)]
+
+        domain = Orange.data.Domain([], None, metas=metas)
+        meta_data = Table.from_numpy(domain, X=np.zeros((len(M), 0)),
+                                     metas=meta_data)
+        
+        meta_data.attributes = meta
+
+        return waveN, M, meta_data
+
+
+
+
+
+
+
+
 
     def read_spectra(self):
         version = 1
