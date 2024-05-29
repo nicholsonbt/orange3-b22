@@ -15,7 +15,7 @@ from Orange.widgets.unsupervised.owdistances import MetricDefs, InterruptExcepti
 
 from Orange.widgets.utils.concurrent import ConcurrentWidgetMixin
 
-
+from Orange.data.util import get_unique_names
 
 
 
@@ -71,7 +71,7 @@ class OWDistanceToTable(widget.OWWidget):
 
         self.controlArea.layout().addLayout(box)
 
-        # gui.auto_apply(self.buttonsArea, self, "autocommit")
+        #gui.auto_apply(self.buttonsArea, self, "autocommit")
 
 
     def name_changed(self):
@@ -101,7 +101,7 @@ class OWDistanceToTable(widget.OWWidget):
         if self.distances is None or self.distances.shape[1] > MAX_COLS:
             return None
 
-        variables = [Orange.data.ContinuousVariable(f"{self.distance_name} {i+1}") for i in range(self.distances.shape[1])]
+        variables = [Orange.data.ContinuousVariable(get_unique_names(self.data.domain, f"{self.distance_name} {i+1}")) for i in range(self.distances.shape[1])]
 
         
         if self.data is None:

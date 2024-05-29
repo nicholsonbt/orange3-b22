@@ -223,7 +223,7 @@ class Nea2Reader(FileFormat, SpectralFileFormat):
         meta_data[:,[0, 1]] = transform_row_col(meta_data[:,[0, 1]], meta)
 
 
-        waveN = file[0:int(n_cols), ome_i]
+        waveN = file[0:int(n_cols), wav_i]
         metas = [Orange.data.ContinuousVariable.make("map_x"),
                  Orange.data.ContinuousVariable.make("map_y"),
                  Orange.data.DiscreteVariable.make("channel", values=channels)]
@@ -289,7 +289,6 @@ class Nea2Reader(FileFormat, SpectralFileFormat):
             assert np.all(col_values == col_values[0])
 
             run_values = file[lower:upper, run_i]
-            print(run_values)
 
             meta_data[channels.size * j:channels.size * (j+1), 0] = col_values[0]
             meta_data[channels.size * j:channels.size * (j+1), 1] = row_values[0]

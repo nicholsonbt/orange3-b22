@@ -14,6 +14,7 @@ from AnyQt import QtCore, QtGui, QtWidgets
 from Orange.widgets.unsupervised.owdistances import MetricDefs, InterruptException
 
 from Orange.widgets.utils.concurrent import ConcurrentWidgetMixin
+from Orange.data.util import get_unique_names
 
 
 
@@ -265,7 +266,7 @@ class OWImprovedDistances(widget.OWWidget, ConcurrentWidgetMixin):
             
             for i in range(result.shape[1]):
                 data = result[:,i]
-                variable = Orange.data.ContinuousVariable(f"K {i+1}")
+                variable = Orange.data.ContinuousVariable(get_unique_names(out_data.domain, f"K {i+1}"))
                 out_data = out_data.add_column(variable, data, to_metas=True)
             
             self.Outputs.data.send(out_data)
