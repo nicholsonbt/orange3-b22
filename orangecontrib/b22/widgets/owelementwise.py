@@ -6,11 +6,9 @@ import Orange.data
 from Orange.widgets import gui, settings, widget
 from Orange.widgets.utils.concurrent import ConcurrentWidgetMixin
 from Orange.widgets.utils.itemmodels import DomainModel
+from Orange.data.util import get_unique_names
 
 class MissingPrimaryException(Exception):
-    pass
-
-class MissingSecondaryException(Exception):
     pass
 
 class IncompatibleShapeException(Exception):
@@ -24,6 +22,14 @@ class Operation:
     def __init__(self, name, func):
         self.name = name
         self.func = func
+
+
+
+def rename(names, proposed):
+    proposed_names = [attr.name for attr in proposed]
+    valid_names = get_unique_names(names, proposed_names)
+
+    return [attr if proposed_names[i] == valid_names[i] else attr.renamed(valid_names[i]) for i, attr in enumerate(proposed)]
 
 
 
@@ -82,15 +88,12 @@ def divide(p_data, s_data):
 
 
 
-
 OPERATIONS = [
     Operation("Addition", lambda p_data, s_data: p_data + s_data),
     Operation("Subtraction", lambda p_data, s_data: p_data - s_data),
     Operation("Multiplication", lambda p_data, s_data: p_data * s_data),
     Operation("Division", lambda p_data, s_data: divide(p_data, s_data)),
 ]
-
-
 
 
 
@@ -145,55 +148,8 @@ class OWElementWise(widget.OWWidget, ConcurrentWidgetMixin):
         )
         
 
-        # list_container = QtWidgets.QHBoxLayout()
-
-        # gbox = QtWidgets.QGroupBox("Spatial Constraints")
-
-
-        # self.axis_list = QtWidgets.QListWidget()
-
-        # addbutton = QtWidgets.QPushButton(
-        #     "Add Axis", toolTip="Add a new axis",
-        #     minimumWidth=120,
-        #     shortcut=QtGui.QKeySequence.New
-        # )
-
-        # self.axis_menu = QtWidgets.QMenu(addbutton)
-        # addbutton.setMenu(self.axis_menu)
-
-        # vbox = QtWidgets.QVBoxLayout()
-        # vbox.addWidget(self.axis_list)
-        # vbox.addWidget(addbutton)
-
-        # gbox.setLayout(vbox)
-
-        # list_container.addWidget(gbox)
-
-
-        # gbox = QtWidgets.QGroupBox("Category Constraints")
-        # self.category_list = QtWidgets.QListWidget()
-        
-        # addbutton = QtWidgets.QPushButton(
-        #     "Add Category", toolTip="Add a new category",
-        #     minimumWidth=120,
-        #     shortcut=QtGui.QKeySequence.New
-        # )
-
-        # self.category_menu = QtWidgets.QMenu(addbutton)
-        # addbutton.setMenu(self.category_menu)
-
-        # vbox = QtWidgets.QVBoxLayout()
-        # vbox.addWidget(self.category_list)
-        # vbox.addWidget(addbutton)
-
-        # gbox.setLayout(vbox)
-
-        # list_container.addWidget(gbox)
-
-        # self.controlArea.layout().addLayout(list_container)
-
-    
-    def reshape_data(self, data, shape):
+    @staticmethod
+    def reshape_data(data, shape):
         # Same shape.
         if data.shape == shape:
             return data
@@ -207,16 +163,62 @@ class OWElementWise(widget.OWWidget, ConcurrentWidgetMixin):
             return np.tile(data, (1, shape[1]))
 
         raise IncompatibleShapeException(data.shape, shape)
+    
+
+    @staticmethod
+    def get_domain(row, col):
+        attributes = row.attributes
+        metas = list(row.metas) + rename(row, col.metas)
+        class_vars = list(row.class_vars) + rename(row, col.class_vars)
+
+        return Orange.data.Domain(attributes, class_vars=class_vars, metas=metas)
+    
+
+
+    @staticmethod
+    def transform(p_data, s_data):
+        rows = max(p_data.X.shape[0], s_data.X.shape[0])
+        cols = max(p_data.X.shape[1], s_data.X.shape[1])
+
+        attributes = np.empty((rows, cols), dtype=p_data.X.dtype)
+
+        if p_data.X.shape[1] == cols:
+            domain = OWElementWise.get_domain(p_data.domain, s_data.domain)
+            metas = np.hstack((
+                OWElementWise.reshape_data(p_data.metas.copy(), (rows, p_data.metas.shape[1])),
+                OWElementWise.reshape_data(s_data.metas.copy(), (rows, s_data.metas.shape[1]))
+            ))
+
+            class_vars = np.hstack((
+                OWElementWise.reshape_data(p_data.Y.copy(), (rows, p_data.Y.shape[1])),
+                OWElementWise.reshape_data(s_data.Y.copy(), (rows, s_data.Y.shape[1]))
+            ))
+            
+
+        else:
+            domain = OWElementWise.get_domain(s_data.domain, p_data.domain)
+            metas = np.hstack((
+                OWElementWise.reshape_data(s_data.metas.copy(), (rows, s_data.metas.shape[1])),
+                OWElementWise.reshape_data(p_data.metas.copy(), (rows, p_data.metas.shape[1]))
+            ))
+
+            class_vars = np.hstack((
+                OWElementWise.reshape_data(s_data.Y.copy(), (rows, s_data.Y.shape[1])),
+                OWElementWise.reshape_data(p_data.Y.copy(), (rows, p_data.Y.shape[1]))
+            ))
+
+        p_X = OWElementWise.reshape_data(p_data.X.copy(), (rows, cols))
+        s_X = OWElementWise.reshape_data(s_data.X.copy(), (rows, cols))
+
+        table = Orange.data.Table.from_numpy(domain, attributes, Y=class_vars, metas=metas)
+        table.attributes = p_data.attributes
+
+        return p_X, s_X, table
+    
 
 
     
     def get_transformed(self):
-        if self.s_data is None:
-            raise MissingSecondaryException
-        
-        if self.p_data is None:
-            raise MissingPrimaryException
-        
         p_shape = self.p_data.X.shape
         s_shape = self.s_data.X.shape
 
@@ -228,21 +230,22 @@ class OWElementWise(widget.OWWidget, ConcurrentWidgetMixin):
 
         return p_data, s_data
     
+        
 
-    def do_operation(self, func):
-        try:
-            return func(*self.get_transformed())
         
-        except MissingSecondaryException:
-            return self.p_data.X.copy()
-        
-    
     def calculate(self):
+        if self.p_data is None:
+            raise MissingPrimaryException()
+        
+        if self.s_data is None:
+            return self.p_data.copy()
+        
+
         operation = self.get_operation_func()
 
-        data = self.p_data.copy()
+        p_X, s_X, data = OWElementWise.transform(self.p_data, self.s_data)
 
-        data.X = self.do_operation(operation)
+        data.X = operation(p_X, s_X)
 
         return data
 
