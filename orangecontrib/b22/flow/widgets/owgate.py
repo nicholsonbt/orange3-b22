@@ -1,19 +1,5 @@
-import numpy as np
-
-from AnyQt.QtCore import Qt
-
-from AnyQt.QtWidgets import QCheckBox, QPushButton
-
-from Orange.data import Table, ContinuousVariable
-from Orange.widgets.settings import DomainContextHandler, ContextSetting
-from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.widgets.widget import OWWidget, Input, Output, Msg
 from Orange.widgets import gui, settings
-
-from orangecontrib.spectroscopy.utils import NanInsideHypercube, InvalidAxisException
-from orangecontrib.spectroscopy.utils.binning import bin_hyperspectra, InvalidBlockShape
-from orangecontrib.spectroscopy.widgets.gui import lineEditIntRange
-
 
 
 
@@ -43,12 +29,6 @@ class OWGate(OWWidget):
         super().__init__()
 
         self.data = None
-
-        # To Add:
-        # - An option to output 'None' when input changed.
-        # - A control widget to control all gates.
-        # - An option to group gates and control each group
-        #   individually.
 
         gui.auto_commit(self.controlArea, self, "autocommit", "Send Data")
 

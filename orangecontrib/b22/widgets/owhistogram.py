@@ -174,7 +174,7 @@ class OWHistogram(widget.OWWidget, ConcurrentWidgetMixin):
         self.hist_model.set_domain(domain)
 
         if not self.hist_attr:
-            self.hist_attr = self.hist_model[0]
+            self.hist_attr = self.hist_model[0] if len(self.hist_model) >= 1 else None
 
     
     def attr_changed(self):

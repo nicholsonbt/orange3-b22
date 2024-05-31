@@ -369,7 +369,7 @@ class PCA(Model):
         else:
             self.model = self.cls(**kwargs)
             self.weights = self.model.fit_transform(data)
-            
+
         self.changed.emit()
 
 

@@ -235,6 +235,9 @@ class OWElementWise(widget.OWWidget, ConcurrentWidgetMixin):
         
     def calculate(self):
         if self.p_data is None:
+            if self.s_data is None:
+                return None
+            
             raise MissingPrimaryException()
         
         if self.s_data is None:
