@@ -35,7 +35,7 @@ Connected-Component Labeling
 
 Connected-component labeling assigns points in a map (grid) to the same cluster if there is some chain of same-cluster points connecting the two according to the defined connectivity kernel.
 
-![](images/connectivity.png)
+![alt text](../images/connectivity.png)
 
 Example
 -------
