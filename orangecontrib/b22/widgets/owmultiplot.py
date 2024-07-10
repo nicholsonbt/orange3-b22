@@ -99,7 +99,6 @@ class OWMultiPlot(widget.OWWidget):
         self.datas = []
         self.tabs = []
         self.status = []
-        self.order = []
         self.attr_x = None
         self.attr_y = None
 
@@ -165,7 +164,7 @@ class OWMultiPlot(widget.OWWidget):
 
 
     def init_models(self):
-        domain = collective_domain(*[data.domain for data in self.datas])
+        domain = collective_domain(*[data.domain for data in self.datas if data is not None])
         self.axis_model.set_domain(domain)
 
         self.attr_x = self.axis_model[0] if self.axis_model else None
@@ -220,6 +219,9 @@ class OWMultiPlot(widget.OWWidget):
         editor = self.tabs[index]
         data = self.datas[index]
 
+        if data is None:
+            return
+        
         colours = editor.image_values()(data)
 
         if isinstance(colours, Orange.data.Table):
@@ -249,17 +251,13 @@ class OWMultiPlot(widget.OWWidget):
     @staticmethod
     def _compute_coords(index, data, attr_x, attr_y):
         if data is None or attr_x is None or attr_y is None:
-            raise Exception
+            return index, None
 
         return index, getCoords(data, attr_x, attr_y)
     
 
     def move_data(self, from_, to_):
-        # order[i] = j, 
-        self.order[from_], self.order[to_] = self.order[to_], self.order[from_]
         self.multiplot_layout.swapData(from_, to_)
-        print(self.order)
-        pass
 
 
     def get_names(self):
@@ -279,14 +277,19 @@ class OWMultiPlot(widget.OWWidget):
         self.compute(index)
 
         self.tabs[index].set_data(data)
-        self.tab_widget.setTabText(index, self.unique_name(data.name))
+
+        if data is None or not hasattr(data, "name"):
+            name = "N/A"
+        else:
+            name = self.unique_name(data.name)
+
+        self.tab_widget.setTabText(index, name)
 
 
     @Inputs.datas.insert
     def insert_data(self, index, data):
         self.datas.insert(index, data)
         self.status.insert(index, Status.FINISHED)
-        self.order.insert(index, index)
         
         # Add curveplot tab.
         tab = HyperEditor(self)
@@ -295,7 +298,13 @@ class OWMultiPlot(widget.OWWidget):
         tab.updated.connect(lambda index=index: self.integrationTypeUpdated(index))
 
         self.tabs.append(tab)
-        self.tab_widget.addTab(tab, self.unique_name(data.name))
+
+        if data is None or not hasattr(data, "name"):
+            name = "N/A"
+        else:
+            name = self.unique_name(data.name)
+
+        self.tab_widget.addTab(tab, name)
 
         self.init_models()
         self.compute(index)
@@ -314,16 +323,6 @@ class OWMultiPlot(widget.OWWidget):
 
         self.tab_widget.removeTab(index)
         self.multiplot_layout.removeData(index)
-
-        rem_i = -1
-        for i in range(len(self.order)):
-            if self.order[i] == index:
-                rem_i = i
-            
-            if self.order[i] > index:
-                self.order[i] -= 1
-
-        self.order.pop(rem_i)
         
         self.init_models()
 
