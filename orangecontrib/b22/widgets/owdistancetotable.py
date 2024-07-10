@@ -1,19 +1,8 @@
 from Orange.widgets import widget, settings, gui
 
-from Orange import distance
 import Orange.data
 
-import numpy as np
-
-from scipy.sparse import issparse
-import bottleneck as bn
-
 from AnyQt import QtCore, QtGui, QtWidgets
-
-
-from Orange.widgets.unsupervised.owdistances import MetricDefs, InterruptException
-
-from Orange.widgets.utils.concurrent import ConcurrentWidgetMixin
 
 from Orange.data.util import get_unique_names
 

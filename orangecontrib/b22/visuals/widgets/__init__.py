@@ -1,1 +1,1 @@
-from .owb22spectra import OWB22Spectra
+from .owspectraview import OWSpectraView

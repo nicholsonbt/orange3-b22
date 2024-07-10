@@ -3,8 +3,6 @@ from Orange.widgets import widget, settings, gui
 from Orange import distance
 import Orange.data
 
-import numpy as np
-
 from scipy.sparse import issparse
 import bottleneck as bn
 

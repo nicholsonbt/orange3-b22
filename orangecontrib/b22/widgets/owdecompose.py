@@ -8,7 +8,6 @@ import Orange.data
 from Orange.widgets import widget as owwidget
 from Orange.widgets import gui, settings
 from Orange.widgets.utils.concurrent import ConcurrentWidgetMixin
-from Orange.widgets.utils.itemmodels import DomainModel
 
 from sklearn import decomposition
 

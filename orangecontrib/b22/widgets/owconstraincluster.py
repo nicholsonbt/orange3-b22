@@ -1,7 +1,6 @@
 import numpy as np
 
 from scipy import ndimage
-from sklearn.metrics import DistanceMetric
 
 from AnyQt import QtCore, QtGui, QtWidgets
 
@@ -9,8 +8,6 @@ import Orange.data
 from Orange.widgets import gui, settings, widget
 from Orange.widgets.utils.concurrent import ConcurrentWidgetMixin
 from Orange.widgets.utils.itemmodels import DomainModel
-
-from orangecontrib.b22.widgets.utils.hypertable import Hypertable
 
 from orangecontrib.spectroscopy.utils import values_to_linspace, index_values
 

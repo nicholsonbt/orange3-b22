@@ -1,1 +1,1 @@
-from orangecontrib.b22.visuals.widgets import OWB22Spectra
+from orangecontrib.b22.visuals.widgets import OWSpectraView

@@ -1,13 +1,9 @@
 import numpy as np
 
-from AnyQt import QtCore, QtGui, QtWidgets
-
 import Orange.data
 from Orange.widgets import gui, settings, widget
 from Orange.widgets.utils.concurrent import ConcurrentWidgetMixin
 from Orange.widgets.utils.itemmodels import DomainModel
-
-from orangecontrib.b22.widgets.utils.hypertable import Hypertable
 
 from orangecontrib.spectroscopy.widgets.gui import lineEditIntRange
 

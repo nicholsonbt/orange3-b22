@@ -5,8 +5,10 @@ from AnyQt import QtCore, QtGui, QtWidgets
 import Orange.data
 from Orange.widgets import gui, settings, widget
 from Orange.widgets.utils.concurrent import ConcurrentWidgetMixin
-from Orange.widgets.utils.itemmodels import DomainModel
 from Orange.data.util import get_unique_names
+
+
+
 
 class MissingPrimaryException(Exception):
     pass
@@ -14,6 +16,11 @@ class MissingPrimaryException(Exception):
 class IncompatibleShapeException(Exception):
     pass
 
+class NoAttributesException(Exception):
+    pass
+
+class MultipleTargetsException(Exception):
+    pass
 
 
 
@@ -100,6 +107,24 @@ OPERATIONS = [
 
 
 
+
+def get_targets(p_data, s_data):
+    p_cols = 1 if len(p_data.Y.shape) == 1 else p_data.Y.shape[1]
+    s_cols = 1 if len(s_data.Y.shape) == 1 else s_data.Y.shape[1]
+
+    if p_cols + s_cols > 1:
+        raise MultipleTargetsException()
+
+    if p_cols == 1:
+        return p_data.Y.copy()[:, np.newaxis]
+    
+    if s_cols == 1:
+        return s_data.Y.copy()[:, np.newaxis]
+    
+    return None
+
+
+
 class OWElementWise(widget.OWWidget, ConcurrentWidgetMixin):
     name = "Elementwise Operations"
 
@@ -128,6 +153,8 @@ class OWElementWise(widget.OWWidget, ConcurrentWidgetMixin):
     class Error(widget.OWWidget.Error):
         incompatible_shapes = widget.Msg("Incompatible shapes: {} and {}")
         missing_primary = widget.Msg("Secondary data but no primary")
+        no_attributes = widget.Msg("{} has no attributes")
+        multiple_targets = widget.Msg("The number of targets in primary and secondary data combined is greater than 1")
 
 
     class Warning(widget.OWWidget.Warning):
@@ -189,12 +216,6 @@ class OWElementWise(widget.OWWidget, ConcurrentWidgetMixin):
                 OWElementWise.reshape_data(s_data.metas.copy(), (rows, s_data.metas.shape[1]))
             ))
 
-            class_vars = np.hstack((
-                OWElementWise.reshape_data(p_data.Y.copy(), (rows, p_data.Y.shape[1])),
-                OWElementWise.reshape_data(s_data.Y.copy(), (rows, s_data.Y.shape[1]))
-            ))
-            
-
         else:
             domain = OWElementWise.get_domain(s_data.domain, p_data.domain)
             metas = np.hstack((
@@ -202,13 +223,13 @@ class OWElementWise(widget.OWWidget, ConcurrentWidgetMixin):
                 OWElementWise.reshape_data(p_data.metas.copy(), (rows, p_data.metas.shape[1]))
             ))
 
-            class_vars = np.hstack((
-                OWElementWise.reshape_data(s_data.Y.copy(), (rows, s_data.Y.shape[1])),
-                OWElementWise.reshape_data(p_data.Y.copy(), (rows, p_data.Y.shape[1]))
-            ))
-
         p_X = OWElementWise.reshape_data(p_data.X.copy(), (rows, cols))
         s_X = OWElementWise.reshape_data(s_data.X.copy(), (rows, cols))
+
+        class_vars = get_targets(p_data, s_data)
+
+        if not class_vars is None:
+            class_vars = OWElementWise.reshape_data(class_vars, (rows, 1))
 
         table = Orange.data.Table.from_numpy(domain, attributes, Y=class_vars, metas=metas)
         table.attributes = p_data.attributes
@@ -239,10 +260,15 @@ class OWElementWise(widget.OWWidget, ConcurrentWidgetMixin):
                 return None
             
             raise MissingPrimaryException()
+
+        if self.p_data.X.shape[1] == 0:
+            raise NoAttributesException("Primary data")
         
         if self.s_data is None:
             return self.p_data.copy()
         
+        if self.s_data.X.shape[1] == 0:
+            raise NoAttributesException("Secondary data")
 
         operation = self.get_operation_func()
 
@@ -263,20 +289,21 @@ class OWElementWise(widget.OWWidget, ConcurrentWidgetMixin):
 
     @Inputs.p_data
     def set_primary_data(self, data):
+        self.Error.clear()
+
         self.p_data = data
         self.commit()
 
 
     @Inputs.s_data
     def set_secondary_data(self, data):
+        self.Error.clear()
+
         self.s_data = data
         self.commit()
 
 
     def commit(self):
-        self.Error.incompatible_shapes.clear()
-        self.Error.missing_primary.clear()
-
         data = None
         
         try:
@@ -284,19 +311,35 @@ class OWElementWise(widget.OWWidget, ConcurrentWidgetMixin):
 
         except IncompatibleShapeException as e:
             self.Error.incompatible_shapes(e.args[0], e.args[1])
+
+        except NoAttributesException as e:
+            self.Error.no_attributes(e.args[0])
         
         except MissingPrimaryException:
             self.Error.missing_primary()
 
-        except AttributeError as e:
-            data = None
+        except MultipleTargetsException:
+            self.Error.multiple_targets()
 
         self.Outputs.data.send(data)
 
 
 
 
+
 if __name__ == "__main__":  # pragma: no cover
     from Orange.widgets.utils.widgetpreview import WidgetPreview
+    import orangecontrib.spectroscopy
     collagen = Orange.data.Table("collagen.csv")
-    WidgetPreview(OWElementWise).run(set_data=collagen)
+
+    domain = Orange.data.Domain(
+        collagen.domain.attributes,
+        metas=collagen.domain.class_vars + collagen.domain.metas
+    )
+    
+    collagen = Orange.data.Table.from_table(domain, collagen)
+
+    WidgetPreview(OWElementWise).run(
+        set_primary_data=collagen[:50],
+        set_secondary_data=collagen[50:100]
+    )

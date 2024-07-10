@@ -338,7 +338,7 @@ class Nea2Reader(FileFormat, SpectralFileFormat):
 if __name__ == "__main__":
     from Orange.data.table import dataset_dirs
     #reader = GWYReader()
-    filename = "C:\\Users\\ixy94928\\Downloads\\WithRef\\2024-03-12 184143 NF HSI S1_1000nm_height_2um_Arm_20x_map.txt"
+    filename = None
     reader = Nea2Reader(FileFormat.locate(filename, dataset_dirs))
 
     d = reader.read()

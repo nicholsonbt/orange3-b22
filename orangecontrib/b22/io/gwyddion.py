@@ -45,8 +45,8 @@ def reader_gsf(file_path):
 
         metas = {
             "Real Center" : {
-                "X" : float(meta.get("XOffset", 0.0)),
-                "Y" : float(meta.get("YOffset", 0.0)),
+                "X" : float(meta.get("XOffset", 0.0)) + float(meta.get("XReal", 1.0)) / 2,
+                "Y" : float(meta.get("YOffset", 0.0)) + float(meta.get("XReal", 1.0)) / 2,
             },
 
             "Angle" : {
@@ -123,8 +123,8 @@ class GWYReader(FileFormat, SpectralFileFormat):
 
         metas = {
             "Real Center" : {
-                "X" : float(meta.get("XOffset", 0.0)),
-                "Y" : float(meta.get("YOffset", 0.0)),
+                "X" : float(meta.get("XOffset", 0.0)) + float(meta.get("XReal", 1.0)) / 2,
+                "Y" : float(meta.get("YOffset", 0.0)) + float(meta.get("XReal", 1.0)) / 2,
             },
 
             "Angle" : {
@@ -160,7 +160,7 @@ class GWYReader(FileFormat, SpectralFileFormat):
 if __name__ == "__main__":
     from Orange.data.table import dataset_dirs
     #reader = GWYReader()
-    filename = "C:\\Users\\ixy94928\\Downloads\\OneDrive_2024-03-20\\2024-03-11 1975\\2024-03-11 171216 WL S2_500nm_height_1um_Arm_spiral_rot_bottormright\\2024-03-11 171216 WL S2_500nm_height_1um_Arm_spiral_rot_bottormright Z raw.gsf"
+    filename = None
     reader = GWYReader(FileFormat.locate(filename, dataset_dirs))
 
     d = reader.read()
