@@ -112,8 +112,9 @@ class OWMultiPlot(widget.OWWidget):
 
         self.tab_widget = QtWidgets.QTabWidget()
         self.tab_widget.setContentsMargins(0, 0, 0, 0)
+        # Move tab by dragging it.
         self.tab_widget.setMovable(True)
-        self.tab_widget.tabBar().tabMoved.connect(self.move_data)
+        self.tab_widget.tabBar().tabMoved.connect(self._tab_index_changed)
         # Rename tab on double click.
         self.tab_widget.tabBar().tabBarDoubleClicked.connect(self.rename_dialog)
 
@@ -126,7 +127,36 @@ class OWMultiPlot(widget.OWWidget):
         splitter.addWidget(self.plotview)
         splitter.addWidget(self.tab_widget)
 
+    
+
+    def _tab_index_changed(self, from_: int, to_: int) -> None:
+        self._change_plt_index(from_, to_)
+
+    def _plt_index_changed(self, from_: int, to_: int) -> None:
+        self._change_tab_index(from_, to_)
+
+    def _change_tab_index(self, from_: int, to_: int) -> None:
+        self.tab_widget.tabBar().moveTab(from_, to_)
+
+    def _change_plt_index(self, from_: int, to_: int) -> None:
+        self.multiplot_layout.swapData(from_, to_)
+
+    def move_data(self, from_: int, to_: int) -> None:
+        self._change_tab_index(from_, to_)
+        self._change_plt_index(from_, to_)
+
+
     def rename_dialog(self, index: int) -> None:
+        """Rename tab at index
+
+        Opens dialog to rename tab at the given index. The current name
+        used as the default text.
+
+        Parameters
+        ----------
+        index : int
+            Index of the tab to be renamed.
+        """
         # Open a popup window to lets the user to change the tab name.
         text, ok = QtWidgets.QInputDialog.getText(
             self,                               # parent
@@ -273,9 +303,6 @@ class OWMultiPlot(widget.OWWidget):
 
         return index, getCoords(data, attr_x, attr_y)
     
-
-    def move_data(self, from_, to_):
-        self.multiplot_layout.swapData(from_, to_)
 
 
     def get_names(self) -> List[str]:
