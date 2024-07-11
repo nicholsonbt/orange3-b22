@@ -1,5 +1,7 @@
 import numpy as np
 
+from typing import List
+
 from AnyQt import QtCore, QtGui, QtWidgets
 
 import pyqtgraph as pg
@@ -112,6 +114,8 @@ class OWMultiPlot(widget.OWWidget):
         self.tab_widget.setContentsMargins(0, 0, 0, 0)
         self.tab_widget.setMovable(True)
         self.tab_widget.tabBar().tabMoved.connect(self.move_data)
+        # Rename tab on double click.
+        self.tab_widget.tabBar().tabBarDoubleClicked.connect(self.rename_dialog)
 
         self.setup_menu()
 
@@ -121,6 +125,20 @@ class OWMultiPlot(widget.OWWidget):
 
         splitter.addWidget(self.plotview)
         splitter.addWidget(self.tab_widget)
+
+    def rename_dialog(self, index: int) -> None:
+        # Open a popup window to lets the user to change the tab name.
+        text, ok = QtWidgets.QInputDialog.getText(
+            self,                               # parent
+            "Rename:",                          # title
+            "New Name:",                        # label
+            text=self.tab_widget.tabText(index) # default text
+        )
+
+        # If ok selected (not cancel) and the text isn't empty, change
+        # the name of the tab.
+        if ok and len(text) > 0:
+            self.tab_widget.setTabText(index, text)
 
 
     def setup_menu(self):
@@ -260,7 +278,16 @@ class OWMultiPlot(widget.OWWidget):
         self.multiplot_layout.swapData(from_, to_)
 
 
-    def get_names(self):
+    def get_names(self) -> List[str]:
+        """Get all current tab names.
+
+        _extended_summary_
+
+        Returns
+        -------
+        List[str]
+            _description_
+        """
         return [self.tab_widget.tabText(i) for i in range(len(self.tabs))]
     
 
