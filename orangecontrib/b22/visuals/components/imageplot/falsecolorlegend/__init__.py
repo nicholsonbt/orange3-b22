@@ -24,20 +24,65 @@ from orangecontrib.b22.visuals.components.imageplot.falsecolorlegend.menucontrol
 
 
 
+
+class Dragger:
+    def __init__(self, parent):
+        self.parent = parent
+        self.x = None
+        self.bounds = None
+
+
+    def init(self, x):
+        self.x = x
+
+    
+    def outsideBounds(self, x):
+        if self.bounds is None:
+            return False
+        
+        return x < self.bounds[0] or x > self.bounds[1]
+
+    
+    def update(self, new_x):
+        if self.outsideBounds(new_x) or self.x is None:
+            return
+        
+        offset = new_x - self.x
+        self.x = new_x
+
+        old_pos = self.parent.pos()
+
+        new_pos = QtCore.QPointF(old_pos.x() + offset, old_pos.y())
+
+        self.parent.setPos(new_pos)
+
+    
+    def setBounds(self, x0, x1):
+        self.bounds = (x0, x1)
+
+
+
+
+
 class FCLegend(pg.GraphicsWidget):
     sigPaletteChanged = QtCore.pyqtSignal(np.ndarray)
     sigPlotTypeChanged = QtCore.pyqtSignal(int)
     sigNormTypeChanged = QtCore.pyqtSignal(int)
     sigZoomToFit = QtCore.pyqtSignal()
 
+    sigMoving = QtCore.pyqtSignal(bool)
+
 
     #region Magic Methods:
     def __init__(self, **kwargs):
         pg.GraphicsWidget.__init__(self)
+        self.setFlag(pg.GraphicsWidget.ItemIsMovable, True)
 
         self.settings = [
             MenuController()
         ]
+
+        self._dragger = Dragger(self)
 
         self.settings[0].sigPaletteChanged.connect(self.sigPaletteChanged.emit)
         self.settings[0].sigPlotTypeChanged.connect(self.sigPlotTypeChanged.emit)
@@ -117,6 +162,8 @@ class FCLegend(pg.GraphicsWidget):
             menu.addAction(action)
 
 
+    def set_menu_visible(self, visibility):
+        self.graphics_menu.setVisible(visibility)
 
 
     def showHistAction(self, flag):
@@ -141,3 +188,23 @@ class FCLegend(pg.GraphicsWidget):
 
     def setData(self, **kwargs):
         self.lut.setData(**kwargs)
+
+
+    def mousePressEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
+            self.sigMoving.emit(True)
+            self._dragger.init(event.scenePos().x())
+
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
+            self.sigMoving.emit(False)
+            self._dragger.init(None)
+
+
+    def mouseMoveEvent(self, event):
+        self._dragger.update(event.scenePos().x())
+
+
+    def setMoveBounds(self, x0, x1):
+        self._dragger.setBounds(x0, x1)

@@ -6,8 +6,6 @@ from AnyQt import QtCore, QtGui, QtWidgets
 
 import pyqtgraph as pg
 
-from scipy import stats
-
 import Orange.data
 from Orange.widgets.settings import DomainContextHandler
 from Orange.widgets import widget, gui, settings
@@ -20,12 +18,15 @@ from orangecontrib.spectroscopy.widgets.owspectra import MenuFocus
 
 from Orange.widgets.utils.itemmodels import DomainModel
 
-from orangecontrib.b22.utils.plots import setBackgroundColour, collective_domain
+from orangecontrib.b22.utils.plots import setBackgroundColour, collective_domain, CompositionTypes, EnumController
 
 from Orange.data.util import get_unique_names
 
+from Orange.widgets.utils import saveplot
 
 from Orange.widgets.utils.concurrent import ThreadExecutor, FutureWatcher
+
+
 
 
 class Task:
@@ -62,6 +63,26 @@ def getCoords(table, attr_x, attr_y):
 
 
 
+def newAction(title, parent, checked=None, callback=None, shortcuts=None):
+    action = QtWidgets.QAction(title, parent)
+
+    if checked is not None:
+        action.setCheckable(True)
+        action.setChecked(checked)
+
+    if callback is not None:
+        action.triggered.connect(callback)
+
+        if checked is not None:
+            QtCore.QTimer.singleShot(0, lambda: callback(checked))
+
+    if shortcuts is not None:
+        action.setShortcuts(shortcuts)
+        action.setShortcutContext(QtCore.Qt.WidgetWithChildrenShortcut)
+
+    return action
+
+
 
 class OWMultiPlot(widget.OWWidget):
     name = "MultiPlot"
@@ -90,8 +111,7 @@ class OWMultiPlot(widget.OWWidget):
 
     axis_model = DomainModel(DomainModel.METAS | DomainModel.CLASSES,
                              valid_types=Orange.data.ContinuousVariable)
-
-
+    
 
     def __init__(self):
         widget.OWWidget.__init__(self)
@@ -104,7 +124,7 @@ class OWMultiPlot(widget.OWWidget):
         self.attr_x = None
         self.attr_y = None
 
-        self.multiplot_layout = MultiPlotLayout()
+        self.multiplot_layout = MultiPlotLayout(self)
 
         self.plotview = pg.GraphicsView()
         self.plotview.setBackground("w")
@@ -114,7 +134,7 @@ class OWMultiPlot(widget.OWWidget):
         self.tab_widget.setContentsMargins(0, 0, 0, 0)
         # Move tab by dragging it.
         self.tab_widget.setMovable(True)
-        self.tab_widget.tabBar().tabMoved.connect(self._tab_index_changed)
+        self.tab_widget.tabBar().tabMoved.connect(lambda old, new: self.move_data(old, new, self.tab_widget))
         # Rename tab on double click.
         self.tab_widget.tabBar().tabBarDoubleClicked.connect(self.rename_dialog)
 
@@ -127,23 +147,19 @@ class OWMultiPlot(widget.OWWidget):
         splitter.addWidget(self.plotview)
         splitter.addWidget(self.tab_widget)
 
-    
 
-    def _tab_index_changed(self, from_: int, to_: int) -> None:
-        self._change_plt_index(from_, to_)
+    def move_data(self, from_, to_, source=None):
+        if source is None:
+            source = self
 
-    def _plt_index_changed(self, from_: int, to_: int) -> None:
-        self._change_tab_index(from_, to_)
+        if source != self.tab_widget:
+            self.tab_widget.tabBar().blockSignals(True)
+            self.tab_widget.tabBar().moveTab(from_, to_)
+            self.tab_widget.tabBar().blockSignals(False)
+        
+        if source != self.multiplot_layout:
+            self.multiplot_layout.move_data(from_, to_, self)
 
-    def _change_tab_index(self, from_: int, to_: int) -> None:
-        self.tab_widget.tabBar().moveTab(from_, to_)
-
-    def _change_plt_index(self, from_: int, to_: int) -> None:
-        self.multiplot_layout.swapData(from_, to_)
-
-    def move_data(self, from_: int, to_: int) -> None:
-        self._change_tab_index(from_, to_)
-        self._change_plt_index(from_, to_)
 
 
     def rename_dialog(self, index: int) -> None:
@@ -183,6 +199,8 @@ class OWMultiPlot(widget.OWWidget):
         view_menu = MenuFocus(self)
         self.button.setMenu(view_menu)
 
+        actions = []
+
         choose_xy = QtWidgets.QWidgetAction(self)
         box = gui.vBox(self)
 
@@ -204,11 +222,83 @@ class OWMultiPlot(widget.OWWidget):
         box.setFocusProxy(self.cb_attr_x)
 
         choose_xy.setDefaultWidget(box)
-        view_menu.addAction(choose_xy)
 
-        action = QtWidgets.QAction("Zoom to fit", view_menu)
-        action.triggered.connect(self.zoomToFit)        
-        view_menu.addAction(action)
+        actions.append(choose_xy)
+
+
+        actions.append(newAction(
+            "Zoom to fit",
+            view_menu,
+            callback=self.zoomToFit,
+            shortcuts=[QtCore.Qt.Key_Backspace, QtGui.QKeySequence(QtCore.Qt.ControlModifier | QtCore.Qt.Key_0)]
+        ))
+
+        #### Container:
+        container = QtWidgets.QWidget()
+
+        layout = QtWidgets.QFormLayout(
+            formAlignment=QtCore.Qt.AlignLeft,
+            labelAlignment=QtCore.Qt.AlignLeft,
+            fieldGrowthPolicy=QtWidgets.QFormLayout.AllNonFixedFieldsGrow
+        )
+
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self.cb_comp_mode = QtWidgets.QComboBox()
+        self.cb_comp_mode.addItems(EnumController.names(CompositionTypes, beautify=True))
+        self.cb_comp_mode.activated.connect(lambda i: self.comp_mode_changed(
+            EnumController.value(CompositionTypes, i)
+        ))
+
+        layout.addRow("Composition:", self.cb_comp_mode)
+
+        container.setLayout(layout)
+
+        action = QtWidgets.QWidgetAction(self)
+
+        action.setDefaultWidget(container)
+        actions.append(action)
+
+        actions.append(newAction(
+            "Save Graph",
+            view_menu,
+            callback=self.save_graph,
+            shortcuts=[QtGui.QKeySequence(QtCore.Qt.ControlModifier | QtCore.Qt.Key_I)]
+        ))
+
+
+        actions.append(newAction(
+            "Show Legend Menus",
+            view_menu,
+            checked=True,
+            callback=self.set_lut_menu_visible,
+        ))
+
+        actions.append(newAction(
+            "Invert X",
+            view_menu,
+            checked=False,
+            callback=self.set_invert_x,
+            shortcuts=[QtCore.Qt.Key_X]
+        ))
+
+        actions.append(newAction(
+            "Invert Y",
+            view_menu,
+            checked=False,
+            callback=self.set_invert_y,
+            shortcuts=[QtCore.Qt.Key_Y]
+        ))
+
+
+        for action in actions:
+            view_menu.addAction(action)
+            self.plotview.addAction(action)
+
+
+        
+        
+
 
 
     def init_models(self):
@@ -224,7 +314,27 @@ class OWMultiPlot(widget.OWWidget):
         self.multiplot_layout.zoomToFit()
 
     
-    def attrs_changed(self, *args):
+    def save_graph(self):
+        saveplot.save_plot(self.plotview, self.graph_writers)
+
+
+    def set_lut_menu_visible(self, checked):
+        self.multiplot_layout.set_lut_menu_visible(checked)
+
+    
+    def set_invert_x(self, checked):
+        self.multiplot_layout.setOpts(invert_x=checked)
+
+    
+    def set_invert_y(self, checked):
+        self.multiplot_layout.setOpts(invert_y=checked)
+
+
+    def comp_mode_changed(self, comp_mode):
+        self.multiplot_layout.setCompositionMode(comp_mode)
+
+    
+    def attrs_changed(self):
         for i in range(len(self.datas)):
             self.compute(i)
 

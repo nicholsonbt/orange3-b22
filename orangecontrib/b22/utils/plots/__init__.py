@@ -13,6 +13,10 @@ import itertools
 
 from scipy import spatial
 
+from AnyQt.QtGui import QPainter
+
+
+
 
 class ImageTypes:
     RASTER = 0
@@ -20,11 +24,48 @@ class ImageTypes:
     LINESCAN = 2
 
 
+
+
 class ChannelNormalisationTypes:
     GLOBAL = 0
     PER_CHANNEL = 1
     NONE_1 = 2
     NONE_256 = 3
+
+
+
+
+class CompositionTypes:
+    Normal              = QPainter.CompositionMode_Source
+    Overlay             = QPainter.CompositionMode_Overlay
+    Multiply            = QPainter.CompositionMode_Multiply
+    Difference          = QPainter.CompositionMode_Difference
+
+
+
+
+
+class EnumController:
+    @staticmethod
+    def names(enum, beautify=False):
+        attrs = [attr for attr in enum.__dict__ if attr[:2] != "__"]
+
+        if beautify:
+            return [attr.replace("_", " ") for attr in attrs]
+        
+        return attrs
+    
+    
+    @staticmethod
+    def values(enum):
+        return [getattr(enum, attr) for attr in EnumController.names(enum)]
+    
+
+    @staticmethod
+    def value(enum, index):
+        return EnumController.values(enum)[index]
+
+
 
 
 def getPixelSize(pw, ph):
