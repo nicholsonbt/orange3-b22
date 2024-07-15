@@ -14,6 +14,8 @@ from Orange.widgets.tests.base import WidgetTest
 from orangecontrib.b22.flow.widgets.owgate import OWGate
 
 
+
+
 class TestOWGate(WidgetTest):
     def setUp(self):
         self.iris = Table("iris")
@@ -22,13 +24,20 @@ class TestOWGate(WidgetTest):
 
 
     def test_default_autocommit_value(self):
-        self.assertEqual(self.widget.autocommit, self.widget.controls.autocommit.isChecked())
+        self.assertEqual(self.widget.autocommit,
+                         self.widget.controls.autocommit.isChecked())
 
 
     def test_autocommit_checkbox_changes_value(self):
         # Changing checked automatically changes autocommit.
-        self.widget.controls.autocommit.setChecked(not self.widget.autocommit)
-        self.assertEqual(self.widget.controls.autocommit.isChecked(), self.widget.autocommit)
+        self.widget.controls.autocommit.setChecked(
+            not self.widget.autocommit
+        )
+
+        self.assertEqual(
+            self.widget.controls.autocommit.isChecked(),
+            self.widget.autocommit
+        )
 
 
     def test_default_in_data(self):
@@ -105,7 +114,8 @@ class TestOWGateClosed(TestOWGate):
     def test_object_input_commit_output(self):
         self.send_signal(self.widget.Inputs.data, self.iris)
         self.commit_and_wait()
-        self.assertEqual(self.get_output(self.widget.Outputs.data), self.iris)
+        self.assertEqual(self.get_output(self.widget.Outputs.data),
+                         self.iris)
 
 
     def test_object_input_commit_warning(self):
@@ -184,7 +194,8 @@ class TestOWGateClosed(TestOWGate):
         self.send_signal(self.widget.Inputs.data, self.iris)
         self.commit_and_wait()
         self.send_signal(self.widget.Inputs.data, None)
-        self.assertEqual(self.get_output(self.widget.Outputs.data), self.iris)
+        self.assertEqual(self.get_output(self.widget.Outputs.data),
+                         self.iris)
 
 
     def test_object_input_commit_disconnect_warning(self):
@@ -212,7 +223,8 @@ class TestOWGateClosed(TestOWGate):
         self.send_signal(self.widget.Inputs.data, self.iris)
         self.commit_and_wait()
         self.send_signal(self.widget.Inputs.data, self.zoo)
-        self.assertEqual(self.get_output(self.widget.Outputs.data), self.iris)
+        self.assertEqual(self.get_output(self.widget.Outputs.data),
+                         self.iris)
 
 
     def test_object_input_commit_input_warning(self):
@@ -240,7 +252,8 @@ class TestOWGateClosed(TestOWGate):
         self.send_signal(self.widget.Inputs.data, self.iris)
         self.send_signal(self.widget.Inputs.data, self.zoo)
         self.commit_and_wait()
-        self.assertEqual(self.get_output(self.widget.Outputs.data), self.zoo)
+        self.assertEqual(self.get_output(self.widget.Outputs.data),
+                         self.zoo)
 
 
     def test_object_input_input_commit_warning(self):
@@ -248,6 +261,7 @@ class TestOWGateClosed(TestOWGate):
         self.send_signal(self.widget.Inputs.data, self.zoo)
         self.commit_and_wait()
         self.assertFalse(self.widget.Warning.not_connected.is_shown())
+
 
 
 
@@ -279,7 +293,8 @@ class TestOWGateOpen(TestOWGate):
 
     def test_object_input_output(self):
         self.send_signal(self.widget.Inputs.data, self.iris)
-        self.assertEqual(self.get_output(self.widget.Outputs.data), self.iris)
+        self.assertEqual(self.get_output(self.widget.Outputs.data),
+                         self.iris)
 
 
     def test_object_input_warning(self):
@@ -320,7 +335,8 @@ class TestOWGateOpen(TestOWGate):
     def test_object_input_input_output(self):
         self.send_signal(self.widget.Inputs.data, self.iris)
         self.send_signal(self.widget.Inputs.data, self.zoo)
-        self.assertEqual(self.get_output(self.widget.Outputs.data), self.zoo)
+        self.assertEqual(self.get_output(self.widget.Outputs.data),
+                         self.zoo)
 
 
     def test_object_input_input_warning(self):
