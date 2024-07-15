@@ -342,13 +342,24 @@ class FalseColorRect(pg.GraphicsWidget):
 
 
     def updateHist(self):
+        def clearLines(*lines):
+            hist = self.get_hist(None, None)
+
+            for line in lines:
+                line.setPath(hist)
+
+
         x, y = self.getNormHist()
 
         if (x is None or self.rect_colours is None or
                 self.hist_colours is None or not self.hist_visible):
-            
-            histogram = self.get_hist(None, None)
-            self.line.setPath(histogram)
+
+            clearLines(
+                self.line,
+                self.line_r,
+                self.line_g,
+                self.line_b,
+            )
 
             self.setBarWidth(FalseColorRect.BASIC_WIDTH)
             return
@@ -372,7 +383,8 @@ class FalseColorRect(pg.GraphicsWidget):
             self.line_g.setPen(pen_g)
             self.line_b.setPen(pen_b)
 
-            self.line.setPath(self.get_hist(None, None))
+            clearLines(self.line)
+
             self.line_r.setPath(self.get_hist(x, y[0]))
             self.line_g.setPath(self.get_hist(x, y[1]))
             self.line_b.setPath(self.get_hist(x, y[2]))
@@ -387,9 +399,12 @@ class FalseColorRect(pg.GraphicsWidget):
             self.line.setPen(pen)
 
             self.line.setPath(self.get_hist(x, y))
-            self.line_r.setPath(self.get_hist(None, None))
-            self.line_g.setPath(self.get_hist(None, None))
-            self.line_b.setPath(self.get_hist(None, None))
+
+            clearLines(
+                self.line_r,
+                self.line_g,
+                self.line_b,
+            )
 
 
     def get_hist(self, x, y):
