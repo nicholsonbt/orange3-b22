@@ -6,6 +6,9 @@ from Orange.widgets.utils.concurrent import ConcurrentWidgetMixin
 
 
 
+class NaNElementException(Exception):
+    pass
+
 
 
 class OWUnwrap(widget.OWWidget, ConcurrentWidgetMixin):
@@ -24,23 +27,15 @@ class OWUnwrap(widget.OWWidget, ConcurrentWidgetMixin):
     want_control_area = True
     resizing_enabled = False
 
-
     settingsHandler = settings.DomainContextHandler()
-
 
     autocommit = settings.Setting(True)
 
-
-    DEFAULT_DISCONT = None
-    DEFAULT_AXIS = 1
-    DEFAULT_PERIOD = 2*np.pi
-
+    DEFAULT_DISCONT = np.pi
+    DEFAULT_PERIOD = 2 * np.pi
 
     discont = settings.Setting(DEFAULT_DISCONT)
-    axis = settings.Setting(DEFAULT_AXIS)
     period = settings.Setting(DEFAULT_PERIOD)
-    
-
 
 
     class Error(widget.OWWidget.Error):
@@ -57,13 +52,11 @@ class OWUnwrap(widget.OWWidget, ConcurrentWidgetMixin):
 
         self.data = None
         self.discont = OWUnwrap.DEFAULT_DISCONT
-        self.axis = OWUnwrap.DEFAULT_AXIS
         self.period = OWUnwrap.DEFAULT_PERIOD
 
-        # Add discont, axis and period options.
+        # Add discont and period options.
 
         gui.auto_commit(self.controlArea, self, "autocommit", "Send Data")
-
 
 
     @Inputs.data
@@ -76,20 +69,36 @@ class OWUnwrap(widget.OWWidget, ConcurrentWidgetMixin):
     def commit(self):
         out_data = None
 
-        if self.data:
-            out_data = OWUnwrap.unwrap(self.data, self.discont, self.axis, self.period)
+        if self.data is not None:
+            out_data = OWUnwrap.unwrap(self.data, discont=self.discont, period=self.period)
 
         self.Outputs.data.send(out_data)
 
 
+    @staticmethod
+    def unwrap_table(table, discont=DEFAULT_DISCONT, period=DEFAULT_PERIOD):
+        new_table = table.copy()
+        new_table.X = OWUnwrap.unwrap(table.X, discont=discont, period=period)
+        return new_table
+    
 
     @staticmethod
-    def unwrap(in_data, discont=DEFAULT_DISCONT, axis=DEFAULT_AXIS, period=DEFAULT_PERIOD):
-        out_data = in_data.copy()
-        out_data.X = np.unwrap(in_data.X, discont=discont, axis=axis, period=period)
-        return out_data
+    def unwrap(data, discont=DEFAULT_DISCONT, period=DEFAULT_PERIOD):
+        new_data = data.copy()
 
+        for row_i in range(data.shape[0]):
+            valid = ~np.isnan(data[row_i, :])
+            new_data[row_i, valid] = np.unwrap(data[row_i, valid], discont=discont, axis=1, period=period)
 
+        return new_data
+    
+    
+    @staticmethod
+    def unwrap_row(row, discont=DEFAULT_DISCONT, period=DEFAULT_PERIOD):
+        if np.any(np.isnan(row)):
+            raise NaNElementException()
+        
+        return np.unwrap(row, discont=discont, period=period)
 
 
 
