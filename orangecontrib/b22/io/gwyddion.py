@@ -113,7 +113,7 @@ def reader_gsf(file_path):
 class GWYReader(FileFormat, SpectralFileFormat):
 
     EXTENSIONS = (".gsf",)
-    DESCRIPTION = 'Gwyddion Simple Field'
+    DESCRIPTION = 'Gwyddion Simple Field 2'
 
     def read_spectra(self):
         X, XRr, YRr, meta = reader_gsf(self.filename)
@@ -142,18 +142,7 @@ class GWYReader(FileFormat, SpectralFileFormat):
             }
         }
 
-        print(metas)
-
         data[2].metas[:,[0,1]] = transform_row_col(data[2].metas[:,[0,1]], metas)
-
-        print(data[2].metas[:,[0,1]])
-
-        d = data[2]
-
-        print(np.nanmin(d.metas, axis=0))
-        print(np.nanmean(d.metas, axis=0))
-        print(np.nanmax(d.metas, axis=0))
-
 
         return data
     
@@ -164,4 +153,3 @@ if __name__ == "__main__":
     reader = GWYReader(FileFormat.locate(filename, dataset_dirs))
 
     d = reader.read()
-    print(np.nanmean(d.metas, axis=0))
