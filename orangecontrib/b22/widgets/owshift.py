@@ -1476,8 +1476,12 @@ class OWShift(OWWidget):
             images = new_data.attributes["visible_images"]
 
             for image in images:
-                image["pos_x"] -= float(self.offset_x)
-                image["pos_y"] -= float(self.offset_y)
+                if isinstance(image, dict):
+                    image["pos_x"] -= float(self.offset_x)
+                    image["pos_y"] -= float(self.offset_y)
+                else:
+                    image.pos_x -= float(self.offset_x)
+                    image.pos_y -= float(self.offset_y)
 
         return new_data
     
