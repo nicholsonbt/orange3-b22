@@ -41,16 +41,19 @@ class ChipTransition(Preprocess):
         if len(self.positions) == 0:
             return in_data.copy()
         
-        indices = [i for i, attr in enumerate(in_data.domain.attributes) if float(attr.name) in self.positions]
+        wavenumbers = np.array([float(attr.name) for attr in in_data.domain.attributes])
+        
+        order = np.argsort(wavenumbers)
+        rev_order = np.argsort(order)
+        
+        diffs = np.diff(in_data.X[:, order], axis=1)
 
-        diffs = np.diff(in_data.X, axis=1)
-
-        diffs[:, indices] = 0
+        diffs[:, self.positions] = 0
 
         diffs = np.hstack((diffs, np.zeros((diffs.shape[0], 1))))
 
         out_data = in_data.copy()
-        out_data.X = np.cumsum(diffs, axis=1)
+        out_data.X = np.cumsum(diffs, axis=1)[:, rev_order]
 
         return out_data
 
