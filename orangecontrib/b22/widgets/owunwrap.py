@@ -70,7 +70,7 @@ class OWUnwrap(widget.OWWidget, ConcurrentWidgetMixin):
         out_data = None
 
         if self.data is not None:
-            out_data = OWUnwrap.unwrap(self.data, discont=self.discont, period=self.period)
+            out_data = OWUnwrap.unwrap_table(self.data, discont=self.discont, period=self.period)
 
         self.Outputs.data.send(out_data)
 
@@ -88,7 +88,7 @@ class OWUnwrap(widget.OWWidget, ConcurrentWidgetMixin):
 
         for row_i in range(data.shape[0]):
             valid = ~np.isnan(data[row_i, :])
-            new_data[row_i, valid] = np.unwrap(data[row_i, valid], discont=discont, axis=1, period=period)
+            new_data[row_i, valid] = np.unwrap(data[row_i, valid], discont=discont, period=period)
 
         return new_data
     
